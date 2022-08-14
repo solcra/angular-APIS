@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { switchMap } from 'rxjs/operators'
 
 import { CreateProductDTO, Product, UpdateProductDTO } from '../../models/product.model';
 
@@ -27,6 +28,9 @@ export class ProductsComponent implements OnInit {
     },
     description: ''
   };
+  limit = 10;
+  offset = 0;
+  statusDetail: 'loading' | 'success' | 'error' | 'init' = 'init';
 
   constructor(
     private storeService: StoreService,
@@ -41,6 +45,11 @@ export class ProductsComponent implements OnInit {
       this.products = data;
       console.log(this.products);
     });
+    // this.productsService.getProductsByPage(10,0)
+    // .subscribe(data => {
+    //   this.products = data;
+    //   console.log(this.products);
+    // });
   }
 
   onAddToShoppingCart(product: Product) {
@@ -53,11 +62,39 @@ export class ProductsComponent implements OnInit {
   }
 
   onShowDetail(id: string){
+    this.statusDetail = 'loading';
+    this.toggleProuctDetail();
     this.productsService.getProduct(id)
     .subscribe(data => {
       console.log(data);
       this.productChosen = data;
-      this.toggleProuctDetail();
+      // this.toggleProuctDetail();
+      this.statusDetail = 'success';
+    }, response => {
+      console.error(response);
+      console.log(response.error.message)
+      this.statusDetail = 'error';
+    })
+  }
+
+  readAndUpdate(id: string){
+    // Esto es una Callback hell este metodo no es recomendable realizar.
+    // this.productsService.getProduct(id)
+    // .subscribe(data => {
+    //   const product = data;
+    //   this.productsService.update(product.id, {title: 'change'})
+    //   .subscribe(rtaUpdate => {
+    //     console.log(rtaUpdate);
+    //   })
+    // })
+    this.productsService.getProduct(id)
+    .pipe(
+      switchMap((product)=>{
+        return this.productsService.update(product.id, {title: 'change'})
+      })
+    )
+    .subscribe(data => {
+        console.log(data);
     })
   }
 
@@ -99,6 +136,15 @@ export class ProductsComponent implements OnInit {
         const productIndex = this.products.findIndex(item => item.id === this.productChosen.id);
         this.products.splice(productIndex, 1);
       })
+  }
+
+  loadMore() {
+    this.productsService.getProductsByPage(this.limit,this.offset)
+    .subscribe(data => {
+      this.products = this.products.concat(data);
+      console.log(this.products);
+      this.offset += this.limit;
+    });
   }
 
 }

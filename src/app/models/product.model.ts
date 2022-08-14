@@ -9,6 +9,7 @@ export interface Product {
   images: string[];
   description: string;
   category: Category;
+  taxes?: number;
 }
 
 //Omit nos nos omite los parametros que enviemos
